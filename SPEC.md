@@ -123,8 +123,8 @@ Each repo is self-contained -- owns its own cron workflow, no central list neede
 | T2 | x | Generate flake.lock pinning current nixpkgs rev | V1,V2 |
 | T3 | x | Create GitHub repo (pr0d1r2/nixpkgs-lock) | C3 |
 | T4 | x | Protect main branch, require PRs | C3,V6 |
-| T5 | . | Daily update workflow (cron + auto-PR) | C4,C10,I.cron,V3,S.W |
-| T6 | . | CI workflow: `nix flake check` on PRs | C9 |
+| T5 | x | Daily update workflow (cron + auto-PR) | C4,C10,I.cron,V3,S.W |
+| T6 | x | CI workflow: `nix flake check` on PRs | C9 |
 | T7 | . | Add pull-update cron workflow to downstream repos | C5,C12,I.pull,S.W |
 | T8 | . | Flip consuming repos to nixpkgs.follows | C7,V4,S.P |
 | T9 | . | Migration to nixos-26.05 channel | C2 |

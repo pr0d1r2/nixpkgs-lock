@@ -1,0 +1,28 @@
+name: Daily nixpkgs pin update
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v27
+
+      - run: nix flake update
+
+      - uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "chore: daily nixpkgs pin update"
+          title: "chore: daily nixpkgs pin update"
+          branch: auto/daily-update
+          delete-branch: true
+          labels: auto-merge
