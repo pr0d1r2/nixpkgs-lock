@@ -2,7 +2,7 @@ name: Daily nixpkgs pin update
 
 on:
   schedule:
-    - cron: '0 5 * * *'
+    - cron: '0 3 * * *'
   workflow_dispatch:
 
 permissions:
@@ -26,3 +26,5 @@ jobs:
           branch: auto/daily-update
           delete-branch: true
           labels: auto-merge
+          author: Marcin Nowicki <pr0d1r2@gmail.com>
+          committer: Marcin Nowicki <pr0d1r2@gmail.com>
