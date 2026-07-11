@@ -119,6 +119,9 @@ Each repo is self-contained -- owns its own cron workflow, no central list neede
 
 | id | st | desc | cites |
 |----|----|------|-------|
+| T10 | . | Add canonical pull-update workflow template file (templates/update-pins.yml) to nixpkgs-lock repo | C5,I.pull,S.W |
+| T11 | . | Document downstream onboarding in README: copy template to .github/workflows, set 06:30 cron | C12,S.D,S.W |
+| T12 | . | Pilot: apply pull-update workflow to one downstream repo (nix-config-example) from template | C5,C11,S.D |
 | T1 | x | Minimal flake.nix with nixpkgs 25.11 input | C1,C2,I.flake |
 | T2 | x | Generate flake.lock pinning current nixpkgs rev | V1,V2 |
 | T3 | x | Create GitHub repo (pr0d1r2/nixpkgs-lock) | C3 |
