@@ -2,72 +2,57 @@
 
 ## S.G Goal
 
-Centralized nixpkgs version pin for all pr0d1r2/nix-* repos. Single flake.lock is source of truth. Daily cron updates nixpkgs pin. Downstream repos pull updates on their own cron -- no cross-repo auth, no central registry, fully decentralized propagation. No manual intervention on happy path.
+Centralized nixpkgs version pin for all pr0d1r2/nix-* repos. Single
+flake.lock is source of truth. The hallucinogen tend loop's `pin-refresh`
+agent action bumps the pin, opens a PR, drives it green, and merges it.
+nixpkgs-lock is bumped first as the pin standard; downstream repos
+refresh to its validated rev. No manual intervention on happy path.
 
 ## S.C Constraints
 
 - C1: Minimal flake -- inputs only, no outputs, no code
 - C2: Pin nixpkgs stable channel (nixos-25.11, planned migration to 26.05)
 - C3: Main branch protected -- all changes via PR
-- C4: Daily cron at 06:00 UTC -- `nix flake update`, PR if lock changed
-- C5: Pull model -- downstream repos poll nixpkgs-lock on their own cron, no cross-repo tokens
+- C4: Pin updates via hallucinogen tend loop `pin-refresh` -- `nix flake update`, PR if lock changed
+- C5: Downstream repos refreshed by the tend loop -- no per-repo cron workflows
 - C6: No-op safe -- if nixpkgs-lock rev unchanged, `nix flake update nixpkgs-lock` produces no diff, no PR created
 - C7: Downstream repos use `nixpkgs.follows = "nixpkgs-lock/nixpkgs"` -- zero independent pins
 - C8: MIT license
 - C9: LLM-generated, validated via CI
 - C10: Auto-merge PRs when CI green -- both on nixpkgs-lock and downstream repos
-- C11: Zero cross-repo auth -- each repo uses only its own default `GITHUB_TOKEN`
-- C12: Self-contained -- adding new downstream repo = add cron workflow to that repo, no central config change
+- C11: Zero cross-repo auth in consuming repos -- each repo uses only its own default `GITHUB_TOKEN`
+- C12: Adding new downstream repo = add it to the tend loop's fleet, configure `nixpkgs.follows`
 
 ## S.I Interfaces
 
 - I.flake: `inputs.nixpkgs` -- sole input, pinned to nixos-25.11 channel
 - I.follows: `nixpkgs.follows = "nixpkgs-lock/nixpkgs"` -- how consuming repos reference the pin
-- I.cron: `.github/workflows/daily-update.yml` -- daily `nix flake update` + auto-PR (nixpkgs-lock repo)
-- I.pull: `.github/workflows/update-pins.yml` -- downstream repo cron polling nixpkgs-lock for changes
+- I.pin-refresh: hallucinogen tend loop `pin-refresh` -- opens `hallucinogen/pin-update` PR, drives green, merges
 
 ## S.W Workflow Implementation
 
-### Daily update (nixpkgs-lock repo)
+### Pin update (nixpkgs-lock repo -- pin standard)
 
-```yaml
-# .github/workflows/daily-update.yml
-on:
-  schedule:
-    - cron: '0 6 * * *'
-steps:
-  - uses: actions/checkout@v4
-  - uses: cachix/install-nix-action@v27
-  - run: nix flake update
-  - uses: peter-evans/create-pull-request@v6
-    with:
-      commit-message: "chore: daily nixpkgs pin update"
-      title: "chore: daily nixpkgs pin update"
-      branch: auto/daily-update
-      delete-branch: true
-```
+The hallucinogen tend loop's `pin-refresh` agent action:
 
-### Pull update (each downstream repo)
+1. Runs `nix flake update` on nixpkgs-lock
+2. Opens a `hallucinogen/pin-update` PR if the lock changed
+3. Drives the PR green (CI must pass)
+4. Merges the PR
 
-```yaml
-# .github/workflows/update-pins.yml
-on:
-  schedule:
-    - cron: '30 6 * * *'  # 30min after nixpkgs-lock cron
-steps:
-  - uses: actions/checkout@v4
-  - uses: cachix/install-nix-action@v27
-  - run: nix flake update nixpkgs-lock
-  - run: nix flake check --no-build
-  - uses: peter-evans/create-pull-request@v6
-    with:
-      commit-message: "chore: update nixpkgs-lock pin"
-      title: "chore: update nixpkgs-lock pin"
-      branch: auto/pin-update
-      delete-branch: true
-```
+nixpkgs-lock settles green before downstream repos are refreshed,
+so a broken upstream bump breaks only nixpkgs-lock, not the fleet.
 
-No cross-repo tokens. Each repo uses default `GITHUB_TOKEN`. No central registry. No propagation workflow. Adding new repo = add this workflow to it.
+### Pin propagation (each downstream repo)
+
+The tend loop's `pin-refresh` action for downstream repos:
+
+1. Runs `nix flake update nixpkgs-lock` (picks up the validated rev)
+2. Runs `nix flake check --no-build`
+3. Opens a `hallucinogen/pin-update` PR if the lock changed
+4. Drives the PR green and merges
+
+No per-repo cron workflows. No cross-repo tokens in consuming repos.
 
 ## S.P Consuming Repo Pattern
 
@@ -96,15 +81,18 @@ inputs = {
 };
 ```
 
-Key: `nixpkgs` no longer has its own URL -- follows nixpkgs-lock. `nix-dev-shell-agentic` still gets nixpkgs via the consuming repo's `follows`, which transitively comes from nixpkgs-lock.
+Key: `nixpkgs` no longer has its own URL -- follows nixpkgs-lock.
+`nix-dev-shell-agentic` still gets nixpkgs via the consuming repo's
+`follows`, which transitively comes from nixpkgs-lock.
 
 ## S.D Downstream Repos
 
 All pr0d1r2/nix-lefthook-* repos (~80), plus:
+
 - nix-dev-shell-agentic
 - nix-config-example
 
-Each repo is self-contained -- owns its own cron workflow, no central list needed.
+Each repo is part of the hallucinogen tend loop's fleet.
 
 ## S.V Invariants
 
@@ -113,7 +101,7 @@ Each repo is self-contained -- owns its own cron workflow, no central list neede
 - V3: No PR created when `nix flake update` produces no diff (both nixpkgs-lock and downstream)
 - V4: All downstream repos resolve to identical nixpkgs rev via follows
 - V5: Direct push to main blocked -- PR required
-- V6: Zero cross-repo secrets -- no PAT, no dispatch tokens, only default GITHUB_TOKEN per repo
+- V6: Zero cross-repo secrets in consuming repos -- no PAT, no dispatch tokens, only default GITHUB_TOKEN per repo
 
 ## S.T Tasks
 
@@ -123,11 +111,10 @@ Each repo is self-contained -- owns its own cron workflow, no central list neede
 | T2 | x | Generate flake.lock pinning current nixpkgs rev | V1,V2 |
 | T3 | x | Create GitHub repo (pr0d1r2/nixpkgs-lock) | C3 |
 | T4 | x | Protect main branch, require PRs | C3,V6 |
-| T5 | x | Daily update workflow (cron + auto-PR) | C4,C10,I.cron,V3,S.W |
-| T6 | x | CI workflow: `nix flake check` on PRs | C9 |
-| T7 | . | Add pull-update cron workflow to downstream repos | C5,C12,I.pull,S.W |
-| T8 | . | Flip consuming repos to nixpkgs.follows | C7,V4,S.P |
-| T9 | . | Migration to nixos-26.05 channel | C2 |
+| T5 | x | CI workflow: `nix flake check` on PRs | C9 |
+| T6 | x | Pin updates via hallucinogen tend loop pin-refresh | C4,C5,I.pin-refresh,V3,S.W |
+| T7 | x | Flip consuming repos to nixpkgs.follows | C7,V4,S.P |
+| T8 | . | Migration to nixos-26.05 channel | C2 |
 
 ## S.B Bugs
 

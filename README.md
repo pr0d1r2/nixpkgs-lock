@@ -18,8 +18,8 @@ inputs = {
 ## How it works
 
 - Single `flake.lock` pins nixpkgs for ~80 downstream repos
-- Daily cron runs `nix flake update` — PR created only when nixpkgs rev changes
-- Downstream repos poll on their own cron — no cross-repo tokens, fully decentralized
+- The hallucinogen tend loop's `pin-refresh` runs `nix flake update`, opens a PR, drives it green, and merges
+- nixpkgs-lock is bumped first as the pin standard — downstream repos refresh to the validated rev
 - All repos resolve to identical nixpkgs rev via `follows`
 
 See [SPEC.md](SPEC.md) for full specification.
