@@ -121,3 +121,4 @@ Each repo is part of the hallucinogen tend loop's fleet.
 | id | date | cause | fix |
 |----|------|-------|-----|
 | B1 | 2026-07-16 | Migration enabled checks without seeding their required configuration, causing editorconfig, file-size, and embedded-shell validation to fail | Add the canonical set-and-setting check configuration and allowlist |
+| B2 | 2026-07-16 | The confirm app validated generated guardrail commands without providing the materialized wrapper packages on its runtime PATH | Include the materialized guardrail package set in the confirm app runtime |
