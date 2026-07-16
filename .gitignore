@@ -1,0 +1,6 @@
+.direnv/
+result
+result-*
+.markdownlint.yml
+.yamllint.yml
+lefthook.yml
