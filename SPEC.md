@@ -118,4 +118,6 @@ Each repo is part of the hallucinogen tend loop's fleet.
 
 ## S.B Bugs
 
-(none yet)
+| id | date | cause | fix |
+|----|------|-------|-----|
+| B1 | 2026-07-16 | Migration enabled checks without seeding their required configuration, causing editorconfig, file-size, and embedded-shell validation to fail | Add the canonical set-and-setting check configuration and allowlist |
