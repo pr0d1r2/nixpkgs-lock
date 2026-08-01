@@ -1,6 +1,13 @@
 ---
 name: CI
 
+# Thin caller, same shape as every other repo in the fleet -- except the
+# reusable workflow is LOCAL rather than set-and-setting's, because this repo is
+# the pin provider and cannot declare the standard as a flake input (#17).
+# The job id `guardrails` is load-bearing: it is what makes the status contexts
+# `guardrails / check` and `guardrails / check-darwin`, which is what branch
+# protection requires and what the rest of the fleet reports.
+
 "on":
   push:
     branches: [main]
@@ -9,4 +16,4 @@ name: CI
 
 jobs:
   guardrails:
-    uses: pr0d1r2/set-and-setting/.github/workflows/guardrails.yml@main
+    uses: ./.github/workflows/guardrails.yml
