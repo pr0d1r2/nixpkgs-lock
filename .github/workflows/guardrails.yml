@@ -1,0 +1,52 @@
+---
+name: Guardrails
+
+# LOCAL copy of the fleet's guardrails workflow (#17).
+#
+# Every other repo calls `pr0d1r2/set-and-setting/.github/workflows/guardrails.yml`,
+# but that workflow runs `nix develop`, `nix run .#confirm` and
+# `nix build .#setting` -- all of which require the caller's flake to declare
+# set-and-setting as an INPUT. This repo is the pin provider and must carry no
+# such input (it re-enters the graph it feeds), so it runs `nix flake check`
+# against its own vendored checks instead. See flake.nix for the rationale.
+#
+# Kept as a REUSABLE workflow called by a `guardrails` job rather than inlined
+# in ci.yml, because the status contexts a reusable call produces are
+# `<caller-job>/<job>` -- i.e. `guardrails / check` and
+# `guardrails / check-darwin`. Those are the names branch protection requires
+# and the names the rest of the fleet reports, and an inlined job would report
+# as bare `check` instead, silently never satisfying the required contexts.
+
+"on":
+  workflow_call:
+    inputs:
+      flake-check-timeout:
+        description: Timeout in seconds for nix flake check
+        type: string
+        default: "600"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v27
+      - name: Nix flake check
+        run: |
+          nix flake check \
+            --print-build-logs \
+            --timeout ${{ inputs.flake-check-timeout }}
+
+  check-darwin:
+    needs: check
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      # DeterminateSystems installer reuses an existing Nix / `_nixbld` group on
+      # the macos-latest image instead of erroring with eDSRecordAlreadyExists.
+      - uses: DeterminateSystems/nix-installer-action@main
+      - name: Nix flake check
+        run: |
+          nix flake check \
+            --print-build-logs \
+            --timeout ${{ inputs.flake-check-timeout }}
