@@ -1,6 +1,8 @@
+# lefthook.yml / .markdownlint.yml / .yamllint.yml were ignored here because a
+# referenced repo MATERIALIZES them from set-and-setting. This repo is the pin
+# provider and carries no standard input (#17), so it commits its own configs
+# instead -- ignoring a file this repo now tracks is how a bootstrapped gate
+# silently fails to commit.
 .direnv/
 result
 result-*
-.markdownlint.yml
-.yamllint.yml
-lefthook.yml

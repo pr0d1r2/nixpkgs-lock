@@ -1,0 +1,32 @@
+---
+# VENDORED guardrails, committed on purpose (#17).
+#
+# Every other repo in the fleet materializes this file from set-and-setting and
+# gitignores it. This repo cannot: it is the pin PROVIDER, so a flake input on
+# the standard would re-enter the graph it feeds (8-16x path multiplicity, a
+# 522,910-byte lock). It therefore commits its own thin gate, built from the
+# nixpkgs it pins. Keep it in step with `checks` in flake.nix -- the two run the
+# same tools, one at commit time and one in CI.
+
+pre-commit:
+  parallel: true
+  commands:
+    flake-check:
+      glob: "*.{nix,lock}"
+      run: nix flake check --print-build-logs
+    nixfmt:
+      glob: "*.nix"
+      run: nixfmt --check {staged_files}
+    statix:
+      glob: "*.nix"
+      run: statix check .
+    yamllint:
+      glob: "*.{yml,yaml}"
+      run: yamllint -c .yamllint.yml {staged_files}
+    markdownlint:
+      glob: "*.md"
+      run: markdownlint-cli2 --config .markdownlint.yml {staged_files}
+    typos:
+      run: typos {staged_files}
+    gitleaks:
+      run: gitleaks detect --no-git --source . --redact
