@@ -19,7 +19,7 @@
   # referenced-guardrails direction, and it applies to PROVIDERS only: a
   # provider cannot consume the graph it feeds.
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
   };
 
   outputs =
