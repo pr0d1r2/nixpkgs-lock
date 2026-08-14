@@ -1,7 +1,7 @@
 # nixpkgs-lock
 
 [![CI](https://github.com/pr0d1r2/nixpkgs-lock/actions/workflows/ci.yml/badge.svg)](https://github.com/pr0d1r2/nixpkgs-lock/actions/workflows/ci.yml)
-[![nixpkgs](https://img.shields.io/badge/nixpkgs-nixos--25.11-blue)](https://github.com/NixOS/nixpkgs/tree/nixos-25.11)
+[![nixpkgs](https://img.shields.io/badge/nixpkgs-nixos--26.05-blue)](https://github.com/NixOS/nixpkgs/tree/nixos-26.05)
 [![nixpkgs rev](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fpr0d1r2%2Fnixpkgs-lock%2Fmain%2Fflake.lock&query=%24.nodes.nixpkgs.locked.rev&label=nixpkgs%20rev&color=green)](https://github.com/pr0d1r2/nixpkgs-lock/blob/main/flake.lock)
 
 Centralized nixpkgs version pin for all pr0d1r2/nix-* repos.

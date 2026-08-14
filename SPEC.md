@@ -11,7 +11,7 @@ refresh to its validated rev. No manual intervention on happy path.
 ## S.C Constraints
 
 - C1: Minimal flake -- inputs only, no outputs, no code
-- C2: Pin nixpkgs stable channel (nixos-25.11, planned migration to 26.05)
+- C2: Pin nixpkgs stable channel (nixos-26.05)
 - C3: Main branch protected -- all changes via PR
 - C4: Pin updates via hallucinogen tend loop `pin-refresh` -- `nix flake update`, PR if lock changed
 - C5: Downstream repos refreshed by the tend loop -- no per-repo cron workflows
@@ -25,7 +25,7 @@ refresh to its validated rev. No manual intervention on happy path.
 
 ## S.I Interfaces
 
-- I.flake: `inputs.nixpkgs` -- sole input, pinned to nixos-25.11 channel
+- I.flake: `inputs.nixpkgs` -- sole input, pinned to nixos-26.05 channel
 - I.follows: `nixpkgs.follows = "nixpkgs-lock/nixpkgs"` -- how consuming repos reference the pin
 - I.pin-refresh: hallucinogen tend loop `pin-refresh` -- opens `hallucinogen/pin-update` PR, drives green, merges
 
@@ -60,7 +60,7 @@ No per-repo cron workflows. No cross-repo tokens in consuming repos.
 
 ```nix
 inputs = {
-  nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+  nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
   nix-dev-shell-agentic = {
     url = "github:pr0d1r2/nix-dev-shell-agentic";
     inputs.nixpkgs.follows = "nixpkgs";
@@ -97,7 +97,7 @@ Each repo is part of the hallucinogen tend loop's fleet.
 ## S.V Invariants
 
 - V1: flake.lock always contains exactly one input (nixpkgs)
-- V2: nixpkgs always tracks nixos-25.11 channel (until 26.05 migration)
+- V2: nixpkgs always tracks nixos-26.05 channel
 - V3: No PR created when `nix flake update` produces no diff (both nixpkgs-lock and downstream)
 - V4: All downstream repos resolve to identical nixpkgs rev via follows
 - V5: Direct push to main blocked -- PR required
@@ -107,14 +107,14 @@ Each repo is part of the hallucinogen tend loop's fleet.
 
 | id | st | desc | cites |
 |----|----|------|-------|
-| T1 | x | Minimal flake.nix with nixpkgs 25.11 input | C1,C2,I.flake |
+| T1 | x | Minimal flake.nix with nixpkgs 26.05 input | C1,C2,I.flake |
 | T2 | x | Generate flake.lock pinning current nixpkgs rev | V1,V2 |
 | T3 | x | Create GitHub repo (pr0d1r2/nixpkgs-lock) | C3 |
 | T4 | x | Protect main branch, require PRs | C3,V6 |
 | T5 | x | CI workflow: `nix flake check` on PRs | C9 |
 | T6 | x | Pin updates via hallucinogen tend loop pin-refresh | C4,C5,I.pin-refresh,V3,S.W |
 | T7 | x | Flip consuming repos to nixpkgs.follows | C7,V4,S.P |
-| T8 | . | Migration to nixos-26.05 channel | C2 |
+| T8 | x | Migration to nixos-26.05 channel | C2 |
 
 ## S.B Bugs
 
