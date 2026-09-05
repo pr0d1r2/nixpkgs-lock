@@ -110,6 +110,7 @@ Each repo is part of the hallucinogen tend loop's fleet.
 - V7: README nixpkgs date badge matches `flake.lock` `lastModified` (UTC, YYYY-MM-DD) -- enforced by the `pin-badge` check, so a pin refresh that skips the badge fails CI
 - V8: Every guardrail script under `nix/check` is shellcheck-clean and covered by a `tests/unit` file mirroring its source path (`tests/unit/nix/check/x.bats` covers `nix/check/x.sh`) -- both run as flake checks and as lefthook pre-commit commands
 - V9: Guardrail logic shared with the fleet is consumed as a commit-pinned `fetchurl`, never as a flake input -- this repo is the pin provider and must stay a leaf (#17). The pin names a commit, never a branch: `fetchurl` requires a hash, so a branch URL breaks on upstream's next edit
+- V11: The pin never moves backwards -- `nix/check/pin_monotonic.sh` compares `lastModified` (never rev, which has no order) and refuses a decrease unless `PIN_ALLOW_ROLLBACK=1`. Enforced at bump time (the hook) AND merge time (the `pin-monotonic` CI job); only the second sees a stale PR
 - V10: `nix/hooks/post-pin-update.sh` and `nix/check/pin_badge.sh` are inverse -- the check passes on the writer's output, and the writer is idempotent
 
 ## S.T Tasks
@@ -131,6 +132,8 @@ Each repo is part of the hallucinogen tend loop's fleet.
 | T13 | x | file-size check reuses pr0d1r2/nix-lefthook-file-size-check | V9 |
 | T14 | x | `nix/hooks/post-pin-update.sh` writer + bats coverage | V7,V10 |
 | T15 | . | hallucinogen `pin-refresh` runs the repo's post-pin-update hook | V7,V10 |
+| T16 | x | `nix/check/pin_monotonic.sh` + the `pin-monotonic` CI job + hook wiring | V11,B3 |
+| T17 | . | hallucinogen `pin-refresh` applies the same monotonicity guard fleet-wide | V11 |
 
 ## S.B Bugs
 
@@ -138,4 +141,5 @@ Each repo is part of the hallucinogen tend loop's fleet.
 |----|------|-------|-----|
 | B1 | 2026-07-16 | Migration enabled checks without seeding their required configuration, causing editorconfig, file-size, and embedded-shell validation to fail | Add the canonical set-and-setting check configuration and allowlist |
 | B2 | 2026-07-16 | The confirm app validated generated guardrail commands without providing the materialized wrapper packages on its runtime PATH | Include the materialized guardrail package set in the confirm app runtime |
+| B3 | 2026-09-05 | Nothing checked pin DIRECTION. C6/V3 test whether the lock changed, never whether it advanced; `pin_badge.sh` compares for equality; the badge writer renders whatever date the lock holds. PR #10 sat open seven weeks, turned 64 days stale, and merging it would have moved the fleet pin from 2026-09-03 back to 2026-06-30 with every guardrail green. A `post_pin_update.bats` case asserted the rollback as correct behaviour | Add `pin_monotonic.sh` (V11), call it from the writer and from a `pin-monotonic` CI job, and invert the test that encoded the defect |
 | B3 | 2026-09-05 | A documentation edit left two consecutive blank lines, causing the guardrails Markdown lint check to fail | Remove the extra blank line from `docs/LLM-DISCLAIMER.md` |

@@ -26,6 +26,33 @@ name: Guardrails
         default: "600"
 
 jobs:
+  # THE MERGE GATE for pin direction (V11). Deliberately ⊥ a flake check:
+  # mkCheck's src is the flake source, tracked files with no .git, so a flake
+  # check is a pure function of ONE tree while monotonicity needs TWO. And
+  # deliberately ⊥ only the post-pin-update hook: a stale pin PR was FORWARD
+  # when it was opened and turns backwards while it sits, so nothing running at
+  # bump time can see it. Measured on #10 -- seven weeks open, would have moved
+  # the fleet pin from 2026-09-03 back to 2026-06-30 with every guardrail green.
+  #
+  # Runs only on pull_request, ∵ that is where a base to compare against
+  # exists; main is PR-only (C3/V5), so this gate is on every path in.
+  pin-monotonic:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Pin moves forward
+        env:
+          # A label is the override rather than an env edit: it is visible on
+          # the thing being merged, and it expires with the PR.
+          PIN_ALLOW_ROLLBACK: >-
+            ${{ contains(github.event.pull_request.labels.*.name, 'pin-rollback') && '1' || '0' }}
+        run: |
+          git show "origin/${{ github.base_ref }}:flake.lock" >/tmp/base-flake.lock
+          bash nix/check/pin_monotonic.sh /tmp/base-flake.lock flake.lock
+
   check:
     runs-on: ubuntu-latest
     steps:
