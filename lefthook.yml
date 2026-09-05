@@ -29,6 +29,8 @@ pre-commit:
     bats:
       glob: "*.{sh,bats}"
       run: bats --recursive tests/unit
+    file-size:
+      run: lefthook-file-size-check {staged_files}
     trailing-whitespace:
       run: lefthook-trailing-whitespace {staged_files}
     shellcheck:
