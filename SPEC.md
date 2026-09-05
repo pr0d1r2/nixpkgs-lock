@@ -106,6 +106,7 @@ Each repo is part of the hallucinogen tend loop's fleet.
 - V6: Zero cross-repo secrets in consuming repos -- no PAT, no dispatch tokens, only default GITHUB_TOKEN per repo
 - V7: README nixpkgs date badge matches `flake.lock` `lastModified` (UTC, YYYY-MM-DD) -- enforced by the `pin-badge` check, so a pin refresh that skips the badge fails CI
 - V8: Every guardrail script under `nix/check` is shellcheck-clean and covered by a `tests/unit` file mirroring its source path (`tests/unit/nix/check/x.bats` covers `nix/check/x.sh`) -- both run as flake checks and as lefthook pre-commit commands
+- V9: Guardrail logic shared with the fleet is consumed as a commit-pinned `fetchurl`, never as a flake input -- this repo is the pin provider and must stay a leaf (#17). The pin names a commit, never a branch: `fetchurl` requires a hash, so a branch URL breaks on upstream's next edit
 
 ## S.T Tasks
 
@@ -122,6 +123,7 @@ Each repo is part of the hallucinogen tend loop's fleet.
 | T9 | x | README nixpkgs date badge + `pin-badge` drift check | V7 |
 | T10 | x | bats coverage for `nix/check/pin_badge.sh` | V7,V8 |
 | T11 | x | shellcheck check over `**/*.sh` | V8 |
+| T12 | x | whitespace check reuses pr0d1r2/nix-lefthook-trailing-whitespace | V9 |
 
 ## S.B Bugs
 
