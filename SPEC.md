@@ -29,6 +29,7 @@ refresh to its validated rev. No manual intervention on happy path.
 - I.follows: `nixpkgs.follows = "nixpkgs-lock/nixpkgs"` -- how consuming repos reference the pin
 - I.pin-refresh: hallucinogen tend loop `pin-refresh` -- opens `hallucinogen/pin-update` PR, drives green, merges
 - I.date-badge: README badge text `nixpkgs%20date-YYYY--MM--DD-` -- shields.io doubles a literal dash; `nix/check/pin_badge.sh` derives the expected text from `flake.lock`; the `pin-badge` check reads that script's body at eval time
+- I.post-pin-update: `nix/hooks/post-pin-update.sh` -- the WRITER for I.date-badge, run after `nix flake update` and before the commit, so the badge moves with the lock rather than failing the PR that moved it
 
 ## S.W Workflow Implementation
 
@@ -37,7 +38,9 @@ refresh to its validated rev. No manual intervention on happy path.
 The hallucinogen tend loop's `pin-refresh` agent action:
 
 1. Runs `nix flake update` on nixpkgs-lock
-2. Updates the README nixpkgs date badge to the new `lastModified` date (V7)
+2. Runs `nix/hooks/post-pin-update.sh`, which moves the README nixpkgs date
+   badge to the new `lastModified` date (V7, V10). Until hallucinogen calls it
+   (T15), this step is what an agent has to do by hand off a red CI run
 3. Opens a `hallucinogen/pin-update` PR if the lock changed
 4. Drives the PR green (CI must pass)
 5. Merges the PR
@@ -107,6 +110,7 @@ Each repo is part of the hallucinogen tend loop's fleet.
 - V7: README nixpkgs date badge matches `flake.lock` `lastModified` (UTC, YYYY-MM-DD) -- enforced by the `pin-badge` check, so a pin refresh that skips the badge fails CI
 - V8: Every guardrail script under `nix/check` is shellcheck-clean and covered by a `tests/unit` file mirroring its source path (`tests/unit/nix/check/x.bats` covers `nix/check/x.sh`) -- both run as flake checks and as lefthook pre-commit commands
 - V9: Guardrail logic shared with the fleet is consumed as a commit-pinned `fetchurl`, never as a flake input -- this repo is the pin provider and must stay a leaf (#17). The pin names a commit, never a branch: `fetchurl` requires a hash, so a branch URL breaks on upstream's next edit
+- V10: `nix/hooks/post-pin-update.sh` and `nix/check/pin_badge.sh` are inverse -- the check passes on the writer's output, and the writer is idempotent
 
 ## S.T Tasks
 
@@ -125,6 +129,8 @@ Each repo is part of the hallucinogen tend loop's fleet.
 | T11 | x | shellcheck check over `**/*.sh` | V8 |
 | T12 | x | whitespace check reuses pr0d1r2/nix-lefthook-trailing-whitespace | V9 |
 | T13 | x | file-size check reuses pr0d1r2/nix-lefthook-file-size-check | V9 |
+| T14 | x | `nix/hooks/post-pin-update.sh` writer + bats coverage | V7,V10 |
+| T15 | . | hallucinogen `pin-refresh` runs the repo's post-pin-update hook | V7,V10 |
 
 ## S.B Bugs
 

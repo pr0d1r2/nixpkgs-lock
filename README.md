@@ -28,6 +28,6 @@ inputs = {
 - The hallucinogen tend loop's `pin-refresh` runs `nix flake update`, opens a PR, drives it green, and merges
 - nixpkgs-lock is bumped first as the pin standard — downstream repos refresh to the validated rev
 - All repos resolve to identical nixpkgs rev via `follows`
-- The nixpkgs date badge is the `lastModified` of the pinned rev; the `pin-badge` check fails CI if a pin refresh leaves it stale
+- The nixpkgs date badge is the `lastModified` of the pinned rev; `nix/hooks/post-pin-update.sh` writes it after a lock bump and the `pin-badge` check fails CI if it is ever left stale
 
 See [SPEC.md](SPEC.md) for full specification.
