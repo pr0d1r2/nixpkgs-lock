@@ -105,6 +105,7 @@ Each repo is part of the hallucinogen tend loop's fleet.
 - V5: Direct push to main blocked -- PR required
 - V6: Zero cross-repo secrets in consuming repos -- no PAT, no dispatch tokens, only default GITHUB_TOKEN per repo
 - V7: README nixpkgs date badge matches `flake.lock` `lastModified` (UTC, YYYY-MM-DD) -- enforced by the `pin-badge` check, so a pin refresh that skips the badge fails CI
+- V8: Every guardrail script under `nix/check` is shellcheck-clean and covered by a `tests/unit` file mirroring its source path (`tests/unit/nix/check/x.bats` covers `nix/check/x.sh`) -- both run as flake checks and as lefthook pre-commit commands
 
 ## S.T Tasks
 
@@ -119,7 +120,8 @@ Each repo is part of the hallucinogen tend loop's fleet.
 | T7 | x | Flip consuming repos to nixpkgs.follows | C7,V4,S.P |
 | T8 | x | Migration to nixos-26.05 channel | C2 |
 | T9 | x | README nixpkgs date badge + `pin-badge` drift check | V7 |
-| T10 | . | bats coverage for `nix/check/pin_badge.sh` | V7 |
+| T10 | x | bats coverage for `nix/check/pin_badge.sh` | V7,V8 |
+| T11 | x | shellcheck check over `**/*.sh` | V8 |
 
 ## S.B Bugs
 

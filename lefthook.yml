@@ -26,6 +26,12 @@ pre-commit:
     markdownlint:
       glob: "*.md"
       run: markdownlint-cli2 --config .markdownlint.yml {staged_files}
+    bats:
+      glob: "*.{sh,bats}"
+      run: bats --recursive tests/unit
+    shellcheck:
+      glob: "*.sh"
+      run: shellcheck {staged_files}
     typos:
       run: typos {staged_files}
     gitleaks:

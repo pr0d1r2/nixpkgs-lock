@@ -111,6 +111,30 @@
           [ "$rc" -eq 0 ]
         '';
 
+        # nix/check/*.sh are real scripts so they can be tested as real
+        # scripts: the suite runs each against throwaway fixtures in a temp
+        # directory, never the repo's own flake.lock and README.md.
+        #
+        # tests/unit MIRRORS the source tree -- tests/unit/nix/check/x.bats
+        # covers nix/check/x.sh -- so `bats` needs --recursive to reach them.
+        bats =
+          mkCheck pkgs "bats"
+            [
+              pkgs.bats
+              pkgs.jq
+              pkgs.coreutils
+              # The UTC case sets TZ to a real zone; without the database
+              # `date` falls back to UTC anyway and the test loses its teeth.
+              pkgs.tzdata
+            ]
+            ''
+              bats --recursive tests/unit
+            '';
+
+        shellcheck = mkCheck pkgs "shellcheck" [ pkgs.shellcheck ] ''
+          find . -name '*.sh' -print0 | xargs -0 -r shellcheck
+        '';
+
         pin-badge = mkCheck pkgs "pin-badge" [
           pkgs.jq
           pkgs.coreutils
@@ -145,10 +169,13 @@
       devShells = forAllSystems (pkgs: {
         default = pkgs.mkShell {
           packages = [
+            pkgs.bats
             pkgs.gitleaks
+            pkgs.jq
             pkgs.lefthook
             pkgs.markdownlint-cli2
             pkgs.nixfmt-rfc-style
+            pkgs.shellcheck
             pkgs.statix
             pkgs.typos
             pkgs.yamllint
