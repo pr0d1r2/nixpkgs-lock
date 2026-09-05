@@ -124,6 +124,7 @@ Each repo is part of the hallucinogen tend loop's fleet.
 | T10 | x | bats coverage for `nix/check/pin_badge.sh` | V7,V8 |
 | T11 | x | shellcheck check over `**/*.sh` | V8 |
 | T12 | x | whitespace check reuses pr0d1r2/nix-lefthook-trailing-whitespace | V9 |
+| T13 | x | file-size check reuses pr0d1r2/nix-lefthook-file-size-check | V9 |
 
 ## S.B Bugs
 

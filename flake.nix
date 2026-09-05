@@ -50,18 +50,32 @@
         in
         lib.concatStringsSep "\n" (lib.drop body lines);
 
-      # Trailing whitespace and missing final newlines are checked by the
-      # fleet's own tool, pr0d1r2/nix-lefthook-trailing-whitespace, pinned by
-      # commit and hash rather than taken as a flake INPUT. That repo follows
-      # nixpkgs-lock, so an input edge from here would be cyclic and would
-      # rebuild the multiplicity #17 removed. A fetchurl is a fixed-output
-      # derivation: it adds no node to flake.lock and drags in no nixpkgs, so
-      # the leaf invariant holds while the logic stays shared with the ~80
-      # repos that consume the same script.
+      # Guardrail logic shared with the fleet is fetched by COMMIT and hash
+      # rather than taken as a flake input (V9). Those repos declare
+      # `nixpkgs-lock.url`, so an input edge from here would be cyclic and
+      # would rebuild the multiplicity #17 removed. A fetchurl is a
+      # fixed-output derivation: no node in flake.lock, no second nixpkgs in
+      # the graph, so the leaf invariant holds while the logic stays shared
+      # with the ~80 repos running the same scripts.
       #
-      # The pin is a COMMIT, never a branch: fetchurl demands a hash, so a
-      # branch URL would break the build at whatever moment upstream next
-      # edited the file, on an unrelated PR.
+      # The pin is a COMMIT, never a branch or tag: fetchurl demands a hash,
+      # and anything movable breaks the build at whatever moment upstream next
+      # edits the file, on an unrelated PR.
+      fleetScript =
+        pkgs:
+        {
+          repo,
+          rev,
+          file,
+          hash,
+        }:
+        builtins.readFile (
+          pkgs.fetchurl {
+            url = "https://raw.githubusercontent.com/pr0d1r2/${repo}/${rev}/${file}";
+            inherit hash;
+          }
+        );
+
       trailingWhitespace =
         pkgs:
         pkgs.writeShellApplication {
@@ -70,12 +84,49 @@
             pkgs.coreutils
             pkgs.gnugrep
           ];
-          text = builtins.readFile (
-            pkgs.fetchurl {
-              url = "https://raw.githubusercontent.com/pr0d1r2/nix-lefthook-trailing-whitespace/3755028f3691b4e04b05881da16d350acd268523/lefthook-trailing-whitespace.sh";
-              hash = "sha256-zdI3pUndL4GySkUfnHWaY8+JoJoBBgmIzEFI9SFn2SU=";
-            }
-          );
+          text = fleetScript pkgs {
+            repo = "nix-lefthook-trailing-whitespace";
+            rev = "3755028f3691b4e04b05881da16d350acd268523";
+            file = "lefthook-trailing-whitespace.sh";
+            hash = "sha256-zdI3pUndL4GySkUfnHWaY8+JoJoBBgmIzEFI9SFn2SU=";
+          };
+        };
+
+      # Two files: the checker shells out to `get-file-size-limit` as a command
+      # on PATH, so the helper is packaged separately and fed to the checker's
+      # runtimeInputs -- the same wiring upstream's own flake uses.
+      fileSizeCheck =
+        pkgs:
+        let
+          rev = "f30fa4c19aaf68f1e9ad831d2b8e62863a3b6eb0";
+          getLimit = pkgs.writeShellApplication {
+            name = "get-file-size-limit";
+            runtimeInputs = [
+              pkgs.gawk
+              pkgs.gnugrep
+            ];
+            text = fleetScript pkgs {
+              repo = "nix-lefthook-file-size-check";
+              inherit rev;
+              file = "get-file-size-limit.sh";
+              hash = "sha256-MTwV/UlHBGjNliX38pC2b4Vgw9EbTwClz12uzT7oqFk=";
+            };
+          };
+        in
+        pkgs.writeShellApplication {
+          name = "lefthook-file-size-check";
+          runtimeInputs = [
+            pkgs.coreutils
+            pkgs.gawk
+            pkgs.gnugrep
+            getLimit
+          ];
+          text = fleetScript pkgs {
+            repo = "nix-lefthook-file-size-check";
+            inherit rev;
+            file = "lefthook-file-size-check.sh";
+            hash = "sha256-2gwtAdSeF145ZjTCWZkCN64AB/+BsKl95MMlqWoMeB4=";
+          };
         };
 
       # Every check is `runCommand src + tools + script`, so a check is exactly
@@ -162,26 +213,10 @@
         # The check that caught this repo's own regression: the lock is what
         # blows the limit when the input graph re-enters itself, so it is the
         # one guardrail this flake must never drop. Limits stay in
-        # config/lefthook/file_size_limits.yml -- one source of truth, so a
-        # ratchet edited there needs no flake change.
-        file-size = mkCheck pkgs "file-size" [ pkgs.yq-go ] ''
-          cfg=config/lefthook/file_size_limits.yml
-          default="$(yq -r '.default' "$cfg")"
-          rc=0
-          while IFS= read -r -d "" f; do
-            ext="''${f##*.}"
-            limit="$(yq -r ".extensions.\"$ext\" // \"\"" "$cfg")"
-            [ -n "$limit" ] || limit="$default"
-            size="$(wc -c <"$f")"
-            if [ "$size" -gt "$limit" ]; then
-              echo "File size limit exceeded:" >&2
-              echo "  - $f: $size bytes > $limit limit ($ext)" >&2
-              rc=1
-            fi
-          done < <(find . -type f ! -path './.git/*' -print0)
-          # ⊥ `exit $rc` -- an exit here would skip mkCheck's `touch $out` and
-          # fail the build even on a clean pass.
-          [ "$rc" -eq 0 ]
+        # config/lefthook/file_size_limits.yml, the path the tool defaults to,
+        # so a ratchet edited there needs no flake change.
+        file-size = mkCheck pkgs "file-size" [ (fileSizeCheck pkgs) ] ''
+          find . -type f -print0 | xargs -0 -r lefthook-file-size-check
         '';
       });
 
@@ -192,6 +227,7 @@
             pkgs.gitleaks
             pkgs.jq
             pkgs.lefthook
+            (fileSizeCheck pkgs)
             (trailingWhitespace pkgs)
             pkgs.markdownlint-cli2
             pkgs.nixfmt-rfc-style
