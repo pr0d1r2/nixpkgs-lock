@@ -111,6 +111,24 @@
           [ "$rc" -eq 0 ]
         '';
 
+        # nix/check/*.sh are real scripts so they can be tested as real
+        # scripts: the suite runs each against throwaway fixtures in a temp
+        # directory, never the repo's own flake.lock and README.md.
+        bats =
+          mkCheck pkgs "bats"
+            [
+              pkgs.bats
+              pkgs.jq
+              pkgs.coreutils
+            ]
+            ''
+              bats tests/unit
+            '';
+
+        shellcheck = mkCheck pkgs "shellcheck" [ pkgs.shellcheck ] ''
+          find . -name '*.sh' -print0 | xargs -0 -r shellcheck
+        '';
+
         pin-badge = mkCheck pkgs "pin-badge" [
           pkgs.jq
           pkgs.coreutils
@@ -145,10 +163,13 @@
       devShells = forAllSystems (pkgs: {
         default = pkgs.mkShell {
           packages = [
+            pkgs.bats
             pkgs.gitleaks
             pkgs.lefthook
             pkgs.markdownlint-cli2
+            pkgs.jq
             pkgs.nixfmt-rfc-style
+            pkgs.shellcheck
             pkgs.statix
             pkgs.typos
             pkgs.yamllint
