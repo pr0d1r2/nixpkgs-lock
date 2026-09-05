@@ -123,6 +123,9 @@
               pkgs.bats
               pkgs.jq
               pkgs.coreutils
+              # The UTC case sets TZ to a real zone; without the database
+              # `date` falls back to UTC anyway and the test loses its teeth.
+              pkgs.tzdata
             ]
             ''
               bats --recursive tests/unit
@@ -168,9 +171,9 @@
           packages = [
             pkgs.bats
             pkgs.gitleaks
+            pkgs.jq
             pkgs.lefthook
             pkgs.markdownlint-cli2
-            pkgs.jq
             pkgs.nixfmt-rfc-style
             pkgs.shellcheck
             pkgs.statix

@@ -32,9 +32,13 @@ badge() {
   printf '[![nixpkgs date](https://img.shields.io/badge/nixpkgs%%20date-%s-blue)](x)' "$1"
 }
 
+# Invoked as `bash SCRIPT`, not through its shebang: `#!/usr/bin/env bash`
+# needs /usr/bin/env, which the Linux nix sandbox does not have (darwin's
+# does, so a shebang invocation passes locally and 127s in CI). The shebang
+# is for humans running the script by hand and is asserted separately.
 check() {
   cd "$WORK" || return 1
-  run "$SCRIPT"
+  run bash "$SCRIPT"
 }
 
 @test "passes when the badge matches the pinned rev date" {
@@ -60,11 +64,16 @@ check() {
   [[ "$output" == *"nixpkgs%20date-2026--09--03-"* ]]
 }
 
+@test "the script is runnable by hand -- executable, with a bash shebang" {
+  [ -x "$SCRIPT" ]
+  [ "$(head -n 1 "$SCRIPT")" = "#!/usr/bin/env bash" ]
+}
+
 @test "diagnostics go to stderr, leaving stdout clean" {
   write_lock "$EPOCH"
   write_readme "$(badge 2026--01--01)"
   cd "$WORK" || return 1
-  run --separate-stderr "$SCRIPT"
+  run --separate-stderr bash "$SCRIPT"
   [ -z "$output" ]
   [ -n "$stderr" ]
 }
