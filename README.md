@@ -1,5 +1,11 @@
 # nixpkgs-lock
 
+<!-- hallucinogen:autonomy-disclaimer start -->
+> Read [LLM-DISCLAIMER](docs/LLM-DISCLAIMER.md) first — this repository is
+> tended by an autonomous loop, and that file says what the loop may do here,
+> what it may not, and what to check before trusting anything in this tree.
+<!-- hallucinogen:autonomy-disclaimer end -->
+
 [![CI](https://github.com/pr0d1r2/nixpkgs-lock/actions/workflows/ci.yml/badge.svg)](https://github.com/pr0d1r2/nixpkgs-lock/actions/workflows/ci.yml)
 [![nixpkgs](https://img.shields.io/badge/nixpkgs-nixos--26.05-blue)](https://github.com/NixOS/nixpkgs/tree/nixos-26.05)
 [![nixpkgs rev](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fpr0d1r2%2Fnixpkgs-lock%2Fmain%2Fflake.lock&query=%24.nodes.nixpkgs.locked.rev&label=nixpkgs%20rev&color=green)](https://github.com/pr0d1r2/nixpkgs-lock/blob/main/flake.lock)
