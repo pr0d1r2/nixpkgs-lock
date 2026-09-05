@@ -191,6 +191,7 @@
           mkCheck pkgs "bats"
             [
               pkgs.bats
+              pkgs.git
               pkgs.jq
               pkgs.coreutils
               # The UTC case sets TZ to a real zone; without the database

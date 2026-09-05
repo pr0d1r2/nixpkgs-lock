@@ -18,6 +18,25 @@ epoch_date() {
   date -u -d "@$1" +"$2" 2>/dev/null || date -u -r "$1" +"$2"
 }
 
+# REFUSE A ROLLBACK BEFORE WRITING ANYTHING. The badge writer is direction-
+# blind by construction -- it renders whatever date the lock holds, so it will
+# happily stamp an older one and leave every check agreeing with a pin that
+# went backwards. Checked here, at bump time, so pin-refresh's fail-closed seam
+# (V445) turns it into "no commit, no PR" rather than a red PR someone parks.
+#
+# The MERGE gate is the other half and lives in CI: a stale pin PR was forward
+# when opened, so nothing running at bump time can catch it.
+if git rev-parse --verify HEAD >/dev/null 2>&1; then
+  _previous="$(mktemp)"
+  if git show HEAD:flake.lock >"$_previous" 2>/dev/null; then
+    if ! bash "$(dirname "$0")/../check/pin_monotonic.sh" "$_previous" flake.lock; then
+      rm -f "$_previous"
+      exit 1
+    fi
+  fi
+  rm -f "$_previous"
+fi
+
 epoch="$(jq -r '.nodes.nixpkgs.locked.lastModified' flake.lock)"
 
 # Badge text is URL-encoded shields syntax: a literal dash is doubled.

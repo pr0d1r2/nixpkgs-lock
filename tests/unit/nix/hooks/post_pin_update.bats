@@ -100,10 +100,45 @@ run_writer() {
   [ "$status" -eq 0 ]
 }
 
-@test "a pin moving backwards is rewritten too" {
-  write_lock "$OLD"
+# This case used to assert "a pin moving backwards is rewritten too" and
+# PASSED -- the writer is direction-blind by construction, so it stamped the
+# older date and left every check agreeing with a rolled-back pin. That test
+# encoded the defect as a requirement. Measured on PR #10: seven weeks open,
+# 64 days backwards, all guardrails green. Inverted here, and the guard it
+# now asserts lives in nix/check/pin_monotonic.sh.
+
+git_repo_at() {                                 # $1 = epoch to commit as base
+  cd "$WORK" || return 1
+  git init -q .
+  git config user.email pin@test
+  git config user.name pin
+  write_lock "$1"
   write_readme "$(badge 2026--09--03)"
-  run_writer
+  git add -A
+  git commit -qm base
+}
+
+@test "a pin moving BACKWARDS is refused, and the badge is left alone" {
+  git_repo_at "$NEW"
+  write_lock "$OLD"
+  run bash "$SCRIPT"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"BACKWARDS"* ]]
+  grep -qF "nixpkgs%20date-2026--09--03-" "$WORK/README.md"
+}
+
+@test "a pin moving FORWARD past the committed one is rewritten" {
+  git_repo_at "$OLD"
+  write_lock "$NEW"
+  run bash "$SCRIPT"
+  [ "$status" -eq 0 ]
+  grep -qF "nixpkgs%20date-2026--09--03-" "$WORK/README.md"
+}
+
+@test "PIN_ALLOW_ROLLBACK=1 lets a deliberate rollback through to the badge" {
+  git_repo_at "$NEW"
+  write_lock "$OLD"
+  PIN_ALLOW_ROLLBACK=1 run bash "$SCRIPT"
   [ "$status" -eq 0 ]
   grep -qF "nixpkgs%20date-2026--08--12-" "$WORK/README.md"
 }
