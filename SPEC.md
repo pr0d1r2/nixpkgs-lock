@@ -28,7 +28,7 @@ refresh to its validated rev. No manual intervention on happy path.
 - I.flake: `inputs.nixpkgs` -- sole input, pinned to nixos-26.05 channel
 - I.follows: `nixpkgs.follows = "nixpkgs-lock/nixpkgs"` -- how consuming repos reference the pin
 - I.pin-refresh: hallucinogen tend loop `pin-refresh` -- opens `hallucinogen/pin-update` PR, drives green, merges
-- I.date-badge: README badge text `nixpkgs%20date-YYYY--MM--DD-` -- shields.io doubles a literal dash; `nix/check/pin_badge.sh` derives the expected text from `flake.lock` and is run by the `pin-badge` check
+- I.date-badge: README badge text `nixpkgs%20date-YYYY--MM--DD-` -- shields.io doubles a literal dash; `nix/check/pin_badge.sh` derives the expected text from `flake.lock`; the `pin-badge` check reads that script's body at eval time
 
 ## S.W Workflow Implementation
 

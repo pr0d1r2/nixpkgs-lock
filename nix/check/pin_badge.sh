@@ -7,15 +7,21 @@
 # pin refresh that moves the lock without rewriting the badge fails here, in the
 # same PR that moved it.
 #
-# Run from the flake source root.
-
+# Runnable by hand from the flake source root; the pin-badge check in flake.nix
+# reads everything BELOW this preamble and runs it in the shell it supplies.
 set -uo pipefail
+
+# GNU date spells an epoch `-d @N`, BSD date `-r N`, and this script runs by
+# hand on darwin as well as inside the check's coreutils shell.
+epoch_date() {
+  date -u -d "@$1" +"$2" 2>/dev/null || date -u -r "$1" +"$2"
+}
 
 epoch="$(jq -r '.nodes.nixpkgs.locked.lastModified' flake.lock)"
 
 # Badge text is URL-encoded shields syntax: a literal dash is doubled.
-want="$(date -u -d "@$epoch" +%Y-%m-%d)"
-badge="$(date -u -d "@$epoch" +%Y--%m--%d)"
+want="$(epoch_date "$epoch" %Y-%m-%d)"
+badge="$(epoch_date "$epoch" %Y--%m--%d)"
 
 rc=0
 grep -qF "nixpkgs%20date-$badge-" README.md || {
@@ -25,4 +31,6 @@ grep -qF "nixpkgs%20date-$badge-" README.md || {
   rc=1
 }
 
-exit "$rc"
+# The exit status IS this test -- `exit $rc` would work standalone but, spliced
+# into mkCheck, would skip its `touch $out` and fail the build on a clean pass.
+[ "$rc" -eq 0 ]
