@@ -114,6 +114,9 @@
         # nix/check/*.sh are real scripts so they can be tested as real
         # scripts: the suite runs each against throwaway fixtures in a temp
         # directory, never the repo's own flake.lock and README.md.
+        #
+        # tests/unit MIRRORS the source tree -- tests/unit/nix/check/x.bats
+        # covers nix/check/x.sh -- so `bats` needs --recursive to reach them.
         bats =
           mkCheck pkgs "bats"
             [
@@ -122,7 +125,7 @@
               pkgs.coreutils
             ]
             ''
-              bats tests/unit
+              bats --recursive tests/unit
             '';
 
         shellcheck = mkCheck pkgs "shellcheck" [ pkgs.shellcheck ] ''

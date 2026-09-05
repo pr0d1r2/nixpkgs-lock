@@ -11,7 +11,7 @@
 bats_require_minimum_version 1.5.0
 
 setup() {
-  SCRIPT="$BATS_TEST_DIRNAME/../../nix/check/pin_badge.sh"
+  SCRIPT="$BATS_TEST_DIRNAME/../../../../nix/check/pin_badge.sh"
   WORK="$BATS_TEST_TMPDIR/work"
   mkdir -p "$WORK"
 }
