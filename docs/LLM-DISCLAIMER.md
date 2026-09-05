@@ -41,7 +41,6 @@ git log --format='%H %s%n%b'
 A commit whose message explains nothing is a defect in its own right, and worth
 reporting as one.
 
-
 ## The guardrails are this repository's own
 
 This repository is gated by `lefthook.yml`. Before a machine-authored branch is
