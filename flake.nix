@@ -50,6 +50,34 @@
         in
         lib.concatStringsSep "\n" (lib.drop body lines);
 
+      # Trailing whitespace and missing final newlines are checked by the
+      # fleet's own tool, pr0d1r2/nix-lefthook-trailing-whitespace, pinned by
+      # commit and hash rather than taken as a flake INPUT. That repo follows
+      # nixpkgs-lock, so an input edge from here would be cyclic and would
+      # rebuild the multiplicity #17 removed. A fetchurl is a fixed-output
+      # derivation: it adds no node to flake.lock and drags in no nixpkgs, so
+      # the leaf invariant holds while the logic stays shared with the ~80
+      # repos that consume the same script.
+      #
+      # The pin is a COMMIT, never a branch: fetchurl demands a hash, so a
+      # branch URL would break the build at whatever moment upstream next
+      # edited the file, on an unrelated PR.
+      trailingWhitespace =
+        pkgs:
+        pkgs.writeShellApplication {
+          name = "lefthook-trailing-whitespace";
+          runtimeInputs = [
+            pkgs.coreutils
+            pkgs.gnugrep
+          ];
+          text = builtins.readFile (
+            pkgs.fetchurl {
+              url = "https://raw.githubusercontent.com/pr0d1r2/nix-lefthook-trailing-whitespace/3755028f3691b4e04b05881da16d350acd268523/lefthook-trailing-whitespace.sh";
+              hash = "sha256-zdI3pUndL4GySkUfnHWaY8+JoJoBBgmIzEFI9SFn2SU=";
+            }
+          );
+        };
+
       # Every check is `runCommand src + tools + script`, so a check is exactly
       # one place in this file. Checks run against the flake source, which for a
       # git tree is the TRACKED files only -- result/ and .direnv/ never appear.
@@ -93,22 +121,13 @@
           gitleaks detect --no-git --source . --redact
         '';
 
-        whitespace = mkCheck pkgs "whitespace" [ ] ''
-          rc=0
-          while IFS= read -r -d "" f; do
-            case "$f" in ./flake.lock | ./LICENSE) continue ;; esac
-            if grep -nE ' +$' "$f"; then
-              echo "trailing whitespace: $f" >&2
-              rc=1
-            fi
-            if [ -s "$f" ] && [ -n "$(tail -c1 "$f")" ]; then
-              echo "missing final newline: $f" >&2
-              rc=1
-            fi
-          done < <(find . -type f ! -path './.git/*' -print0)
-          # ⊥ `exit $rc` -- an exit here would skip mkCheck's `touch $out` and
-          # fail the build even on a clean pass.
-          [ "$rc" -eq 0 ]
+        # The tool takes file arguments, lefthook-style, so the tree scan
+        # lives here. $src carries tracked files only -- no .git, no result/,
+        # no .direnv -- so nothing needs pruning. flake.lock and LICENSE used
+        # to be exempt; both pass the tool as-is, so the exemptions are gone
+        # and the coverage is wider than before.
+        whitespace = mkCheck pkgs "whitespace" [ (trailingWhitespace pkgs) ] ''
+          find . -type f -print0 | xargs -0 -r lefthook-trailing-whitespace
         '';
 
         # nix/check/*.sh are real scripts so they can be tested as real
@@ -173,6 +192,7 @@
             pkgs.gitleaks
             pkgs.jq
             pkgs.lefthook
+            (trailingWhitespace pkgs)
             pkgs.markdownlint-cli2
             pkgs.nixfmt-rfc-style
             pkgs.shellcheck
