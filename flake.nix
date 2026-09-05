@@ -31,8 +31,24 @@
         "x86_64-linux"
         "aarch64-linux"
       ];
-      forAllSystems =
-        f: nixpkgs.lib.genAttrs supportedSystems (system: f nixpkgs.legacyPackages.${system});
+      inherit (nixpkgs) lib;
+      forAllSystems = f: lib.genAttrs supportedSystems (system: f nixpkgs.legacyPackages.${system});
+
+      # Guardrail shell lives in nix/check/*.sh so it stays a REAL script:
+      # executable, shellcheck-clean, unit-testable, runnable by hand. The flake
+      # reads it at EVAL time and keeps only the body -- the standalone preamble
+      # (shebang, header comment, `set`) must not survive, because mkCheck
+      # already supplies the shell. Reading rather than invoking is also what
+      # makes the check a pure derivation: the body is baked into the .drv
+      # instead of being located under $src when the builder runs.
+      scriptBody =
+        path:
+        let
+          lines = lib.splitString "\n" (builtins.readFile path);
+          isPreamble = l: l == "" || lib.hasPrefix "#" l || lib.hasPrefix "set -" l;
+          body = lib.lists.findFirstIndex (l: !isPreamble l) (lib.length lines) lines;
+        in
+        lib.concatStringsSep "\n" (lib.drop body lines);
 
       # Every check is `runCommand src + tools + script`, so a check is exactly
       # one place in this file. Checks run against the flake source, which for a
@@ -94,6 +110,11 @@
           # fail the build even on a clean pass.
           [ "$rc" -eq 0 ]
         '';
+
+        pin-badge = mkCheck pkgs "pin-badge" [
+          pkgs.jq
+          pkgs.coreutils
+        ] (scriptBody ./nix/check/pin_badge.sh);
 
         # The check that caught this repo's own regression: the lock is what
         # blows the limit when the input graph re-enters itself, so it is the

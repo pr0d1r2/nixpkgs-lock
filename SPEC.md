@@ -28,6 +28,7 @@ refresh to its validated rev. No manual intervention on happy path.
 - I.flake: `inputs.nixpkgs` -- sole input, pinned to nixos-26.05 channel
 - I.follows: `nixpkgs.follows = "nixpkgs-lock/nixpkgs"` -- how consuming repos reference the pin
 - I.pin-refresh: hallucinogen tend loop `pin-refresh` -- opens `hallucinogen/pin-update` PR, drives green, merges
+- I.date-badge: README badge text `nixpkgs%20date-YYYY--MM--DD-` -- shields.io doubles a literal dash; `nix/check/pin_badge.sh` derives the expected text from `flake.lock`; the `pin-badge` check reads that script's body at eval time
 
 ## S.W Workflow Implementation
 
@@ -36,9 +37,10 @@ refresh to its validated rev. No manual intervention on happy path.
 The hallucinogen tend loop's `pin-refresh` agent action:
 
 1. Runs `nix flake update` on nixpkgs-lock
-2. Opens a `hallucinogen/pin-update` PR if the lock changed
-3. Drives the PR green (CI must pass)
-4. Merges the PR
+2. Updates the README nixpkgs date badge to the new `lastModified` date (V7)
+3. Opens a `hallucinogen/pin-update` PR if the lock changed
+4. Drives the PR green (CI must pass)
+5. Merges the PR
 
 nixpkgs-lock settles green before downstream repos are refreshed,
 so a broken upstream bump breaks only nixpkgs-lock, not the fleet.
@@ -102,6 +104,7 @@ Each repo is part of the hallucinogen tend loop's fleet.
 - V4: All downstream repos resolve to identical nixpkgs rev via follows
 - V5: Direct push to main blocked -- PR required
 - V6: Zero cross-repo secrets in consuming repos -- no PAT, no dispatch tokens, only default GITHUB_TOKEN per repo
+- V7: README nixpkgs date badge matches `flake.lock` `lastModified` (UTC, YYYY-MM-DD) -- enforced by the `pin-badge` check, so a pin refresh that skips the badge fails CI
 
 ## S.T Tasks
 
@@ -115,6 +118,8 @@ Each repo is part of the hallucinogen tend loop's fleet.
 | T6 | x | Pin updates via hallucinogen tend loop pin-refresh | C4,C5,I.pin-refresh,V3,S.W |
 | T7 | x | Flip consuming repos to nixpkgs.follows | C7,V4,S.P |
 | T8 | x | Migration to nixos-26.05 channel | C2 |
+| T9 | x | README nixpkgs date badge + `pin-badge` drift check | V7 |
+| T10 | . | bats coverage for `nix/check/pin_badge.sh` | V7 |
 
 ## S.B Bugs
 
