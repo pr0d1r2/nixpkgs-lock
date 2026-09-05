@@ -28,7 +28,7 @@ refresh to its validated rev. No manual intervention on happy path.
 - I.flake: `inputs.nixpkgs` -- sole input, pinned to nixos-26.05 channel
 - I.follows: `nixpkgs.follows = "nixpkgs-lock/nixpkgs"` -- how consuming repos reference the pin
 - I.pin-refresh: hallucinogen tend loop `pin-refresh` -- opens `hallucinogen/pin-update` PR, drives green, merges
-- I.date-badge: README badge text `nixpkgs%20date-YYYY--MM--DD-` -- shields.io doubles a literal dash; the `pin-badge` check derives the expected text from `flake.lock`
+- I.date-badge: README badge text `nixpkgs%20date-YYYY--MM--DD-` -- shields.io doubles a literal dash; `nix/check/pin_badge.sh` derives the expected text from `flake.lock` and is run by the `pin-badge` check
 
 ## S.W Workflow Implementation
 
@@ -119,6 +119,7 @@ Each repo is part of the hallucinogen tend loop's fleet.
 | T7 | x | Flip consuming repos to nixpkgs.follows | C7,V4,S.P |
 | T8 | x | Migration to nixos-26.05 channel | C2 |
 | T9 | x | README nixpkgs date badge + `pin-badge` drift check | V7 |
+| T10 | . | bats coverage for `nix/check/pin_badge.sh` | V7 |
 
 ## S.B Bugs
 

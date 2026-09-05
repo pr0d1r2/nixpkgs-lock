@@ -95,32 +95,18 @@
           [ "$rc" -eq 0 ]
         '';
 
-        # The date badge in README.md is a STATIC string -- shields.io can
-        # render a JSON value but cannot format an epoch, and flake.lock stores
-        # only `lastModified`. So the badge is written by hand and this check is
-        # what keeps it true: any pin refresh that moves the lock without
-        # rewriting the badge fails here, in the same PR that moved it.
+        # Shell lives in nix/check/pin_badge.sh rather than inline here --
+        # embedded shell in Nix is unreviewable and untestable. mkCheck runs
+        # against the flake source, so the script is present at $src.
         pin-badge =
           mkCheck pkgs "pin-badge"
             [
+              pkgs.bash
               pkgs.jq
               pkgs.coreutils
             ]
             ''
-              epoch="$(jq -r '.nodes.nixpkgs.locked.lastModified' flake.lock)"
-              # Badge text is URL-encoded shields syntax: a literal dash is doubled.
-              want="$(date -u -d "@$epoch" +%Y-%m-%d)"
-              badge="$(date -u -d "@$epoch" +%Y--%m--%d)"
-              rc=0
-              grep -qF "nixpkgs%20date-$badge-" README.md || {
-                echo "README nixpkgs date badge is stale:" >&2
-                echo "  - flake.lock pins nixpkgs from $want" >&2
-                echo "  - README.md must carry the badge text nixpkgs%20date-$badge-" >&2
-                rc=1
-              }
-              # ⊥ `exit $rc` -- an exit here would skip mkCheck's `touch $out` and
-              # fail the build even on a clean pass.
-              [ "$rc" -eq 0 ]
+              bash nix/check/pin_badge.sh
             '';
 
         # The check that caught this repo's own regression: the lock is what
