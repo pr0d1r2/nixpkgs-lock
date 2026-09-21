@@ -1,0 +1,8 @@
+---
+# Repository-specific actions for the hallucinogen tend loop.
+#
+# Keep the badge writer immediately after the lock update: the resulting
+# commit must contain both files before CI evaluates pin-badge.
+pin-refresh:
+  after-update:
+    - nix/hooks/post-pin-update.sh
