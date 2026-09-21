@@ -133,7 +133,7 @@ Each repo is part of the hallucinogen tend loop's fleet.
 | T14 | x | `nix/hooks/post-pin-update.sh` writer + bats coverage | V7,V10 |
 | T15 | x | hallucinogen `pin-refresh` runs the repo's post-pin-update hook | V7,V10 |
 | T16 | x | `nix/check/pin_monotonic.sh` + the `pin-monotonic` CI job + hook wiring | V11,B3 |
-| T17 | . | hallucinogen `pin-refresh` applies the same monotonicity guard fleet-wide | V11 |
+| T17 | x | hallucinogen `pin-refresh` applies the same monotonicity guard fleet-wide | V11 |
 
 ## S.B Bugs
 
