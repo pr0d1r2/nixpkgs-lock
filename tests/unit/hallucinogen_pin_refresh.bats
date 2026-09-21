@@ -17,6 +17,16 @@ setup() {
   [ "$output" = "    - nix/hooks/post-pin-update.sh" ]
 }
 
+@test "pin-refresh enables the fleet-wide monotonicity guard" {
+  run awk '
+    /^pin-refresh:/ { in_refresh = 1; next }
+    in_refresh && /^  monotonicity: / { print $2; exit }
+    in_refresh && !/^  / { exit 1 }
+  ' "$CONFIG"
+  [ "$status" -eq 0 ]
+  [ "$output" = "true" ]
+}
+
 @test "the configured hook is executable" {
   [ -x "$BATS_TEST_DIRNAME/../../nix/hooks/post-pin-update.sh" ]
 }

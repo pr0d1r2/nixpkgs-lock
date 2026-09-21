@@ -4,5 +4,10 @@
 # Keep the badge writer immediately after the lock update: the resulting
 # commit must contain both files before CI evaluates pin-badge.
 pin-refresh:
+  # A pin refresh is allowed to advance (or remain equal), never to move the
+  # fleet backwards.  This is evaluated by hallucinogen against the lock before
+  # the update and the candidate lock after it, so it also covers downstream
+  # repositories that do not carry this provider's local hook.
+  monotonicity: true
   after-update:
     - nix/hooks/post-pin-update.sh
