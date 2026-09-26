@@ -28,11 +28,14 @@ epoch_date() {
 # when opened, so nothing running at bump time can catch it.
 if git rev-parse --verify HEAD >/dev/null 2>&1; then
   _previous="$(mktemp)"
-  if git show HEAD:flake.lock >"$_previous" 2>/dev/null; then
-    if ! bash "$(dirname "$0")/../check/pin_monotonic.sh" "$_previous" flake.lock; then
-      rm -f "$_previous"
-      exit 1
-    fi
+  if ! git show HEAD:flake.lock >"$_previous" 2>/dev/null; then
+    rm -f "$_previous"
+    echo "post-pin-update: cannot read the committed flake.lock" >&2
+    exit 1
+  fi
+  if ! bash "$(dirname "$0")/../check/pin_monotonic.sh" "$_previous" flake.lock; then
+    rm -f "$_previous"
+    exit 1
   fi
   rm -f "$_previous"
 fi

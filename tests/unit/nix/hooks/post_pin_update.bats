@@ -143,6 +143,20 @@ git_repo_at() {                                 # $1 = epoch to commit as base
   grep -qF "nixpkgs%20date-2026--08--12-" "$WORK/README.md"
 }
 
+@test "a repository without a committed lock fails closed" {
+  cd "$WORK" || return 1
+  git init -q .
+  git config user.email pin@test
+  git config user.name pin
+  write_readme "$(badge 2026--09--03)"
+  git add README.md
+  git commit -qm base
+  write_lock "$NEW"
+  run bash "$SCRIPT"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"cannot read the committed flake.lock"* ]]
+}
+
 @test "the script is runnable by hand -- executable, with a bash shebang" {
   [ -x "$SCRIPT" ]
   [ "$(head -n 1 "$SCRIPT")" = "#!/usr/bin/env bash" ]
